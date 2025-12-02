@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KIN 310 – Hip-Hop Move Sequencer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      color: #222;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      flex: 1 1 320px;
+      min-width: 280px;
+    }
+
+    .panel-header {
+      font-weight: bold;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    .move-list, .sequence-container {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .move-item, .sequence-item {
+      padding: 8px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background-color: #fafafa;
+    }
+
+    .move-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .move-name {
+      font-weight: 600;
+    }
+
+    .move-description {
+      font-size: 0.88rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    button {
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background-color: #2563eb;
+      color: #fff;
+      transition: 0.15s;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #1d4ed8;
+    }
+
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .small-btn {
+      padding: 4px 8px;
+      font-size: 0.8rem;
+    }
+
+    .sequence-controls {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .status-text {
+      margin-top: 8px;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .highlight-box {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 8px;
+      background-color: #111827;
+      color: #f9fafb;
+      min-height: 60px;
+    }
+
+    .highlight-label {
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .highlight-move {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .highlight-description {
+      font-size: 0.9rem;
+      margin-top: 4px;
+      color: #e5e7eb;
+    }
+
+    /* Visual little boxes showing order */
+
+    .visual-sequence {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .visual-step {
+      flex: 0 0 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      background-color: #f3f4f6;
+      color: #111827;
+      position: relative;
+    }
+
+    .visual-step span {
+      pointer-events: none;
+    }
+
+    .visual-step::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: #6b7280;
+      white-space: nowrap;
+    }
+
+    .visual-step.active {
+      border-color: #2563eb;
+      background-color: #dbeafe;
+    }
+
+    /* Current move picture */
+
+    .move-image-wrapper {
+      margin-top: 14px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background-color: #f9fafb;
+      text-align: center;
+    }
+
+    .move-image-wrapper h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    #move-image {
+      max-width: 100%;
+      max-height: 220px;
+      border-radius: 8px;
+      object-fit: contain;
+      background-color: #e5e7eb;
+    }
+
+    .move-image-note {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>KIN 310 – Hip-Hop Move Sequencer</h1>
+
+  <div class="container">
+    <!-- Available moves -->
+    <section class="panel">
+      <div class="panel-header">Available Moves</div>
+      <p style="font-size:0.9rem; color:#555;">
+        Select up to four moves. Students can then practice and perform the sequence in this order.
+      </p>
+      <ul class="move-list" id="available-moves"></ul>
+    </section>
+
+    <!-- Sequence builder -->
+    <section class="panel">
+      <div class="panel-header">Your Sequence (max 4 moves)</div>
+      <div id="sequence-container"></div>
+      <button id="clear-sequence-btn" class="small-btn" type="button">
+        Clear Sequence
+      </button>
+      <div id="sequence-status" class="status-text"></div>
+    </section>
+
+    <!-- Preview and move picture -->
+    <section class="panel">
+      <div class="panel-header">Sequence Preview</div>
+      <p style="font-size:0.9rem; color:#555;">
+        Press "Play Sequence" to step through the routine. The boxes show the order, and the picture below updates for each move.
+      </p>
+      <button id="play-btn" type="button">Play Sequence</button>
+
+      <div class="highlight-box">
+        <div class="highlight-label">Current move</div>
+        <div class="highlight-move" id="highlight-move">No move playing yet.</div>
+        <div class="highlight-description" id="highlight-description">
+          Build a sequence and press "Play Sequence" to preview.
+        </div>
+      </div>
+
+      <div id="visual-sequence" class="visual-sequence"></div>
+
+      <div class="move-image-wrapper">
+        <h3>Move picture</h3>
+        <img id="move-image" src="" alt="No move selected">
+        <div class="move-image-note">
+          Images should be saved in an <strong>images</strong> folder beside this file.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // 12 moves with image file names
+    const MOVE_LIBRARY = [
+      { id: "crossed-arms",     name: "Crossed arms pose",   img: "images/crossed-arms.png",
+        description: "A simple, strong standing pose with arms crossed." },
+      { id: "criss-cross",      name: "Criss-cross feet",    img: "images/criss-cross.png",
+        description: "Jump and cross your feet, then jump again to open." },
+      { id: "step-slide",       name: "Step and slide",      img: "images/step-and-slide.png",
+        description: "Step to the side and slide your other foot in." },
+      { id: "foot-first",       name: "Foot first slide",    img: "images/foot-first-slide.png",
+        description: "Push off one foot into a smooth sideways slide." },
+      { id: "smurf",            name: "Smurf",               img: "images/smurf.png",
+        description: "A classic hip-hop groove with a bounce and side-arm movement." },
+      { id: "reebok",           name: "Reebok",              img: "images/reebok.png",
+        description: "A foundational hip-hop step involving rocking and arm swings." },
+      { id: "running-man",      name: "Running man",         img: "images/running-man.png",
+        description: "A backward-traveling step that mimics running in place." },
+      { id: "stick-roll",       name: "Stick and roll",      img: "images/stick-and-roll.png",
+        description: "A sharp freeze followed by a smooth body roll." },
+      { id: "chest-pop",        name: "Chest pop",           img: "images/chest-pop.png",
+        description: "A quick, controlled forward pop of the chest." },
+      { id: "shoulder-lean",    name: "Shoulder lean",       img: "images/shoulder-lean.png",
+        description: "Lean side to side while dropping one shoulder with rhythm." },
+      { id: "stanky-leg",       name: "Stanky leg",          img: "images/stanky-leg.png",
+        description: "Extend one leg and rotate it while leaning back slightly." },
+      { id: "kick-ball-change", name: "Kick ball change",    img: "images/kick-ball-change.png",
+        description: "Kick forward lightly, step back on the ball of your foot, then switch weight." }
+    ];
+
+    const MAX_MOVES = 4;
+    let sequence = [];
+    let playing = false;
+    let playTimeout = null;
+
+    const availableList      = document.getElementById("available-moves");
+    const sequenceContainer  = document.getElementById("sequence-container");
+    const sequenceStatus     = document.getElementById("sequence-status");
+    const highlightMove      = document.getElementById("highlight-move");
+    const highlightDesc      = document.getElementById("highlight-description");
+    const visualSequence     = document.getElementById("visual-sequence");
+    const clearBtn           = document.getElementById("clear-sequence-btn");
+    const playBtn            = document.getElementById("play-btn");
+    const moveImage          = document.getElementById("move-image");
+
+    function renderAvailableMoves() {
+      availableList.innerHTML = "";
+      MOVE_LIBRARY.forEach(move => {
+        const item = document.createElement("li");
+        item.className = "move-item";
+        item.innerHTML = `
+          <div class="move-row">
+            <span class="move-name">${move.name}</span>
+            <button type="button" onclick="addMove('${move.id}')">Add</button>
+          </div>
+          <div class="move-description">${move.description}</div>
+        `;
+        availableList.appendChild(item);
+      });
+    }
+
+    function renderSequence() {
+      sequenceContainer.innerHTML = "";
+      if (sequence.length === 0) {
+        sequenceContainer.innerHTML = "<p style='color:#777;'>No moves selected yet. Click \"Add\" to build a sequence.</p>";
+      } else {
+        sequence.forEach((id, index) => {
+          const move = MOVE_LIBRARY.find(m => m.id === id);
+          const div = document.createElement("div");
+          div.className = "sequence-item";
+          div.innerHTML = `
+            <div class="move-row">
+              <span class="move-name">${index + 1}. ${move.name}</span>
+            </div>
+            <div class="move-description">${move.description}</div>
+            <div class="sequence-controls">
+              <button class="small-btn" type="button" onclick="moveUp(${index})">Up</button>
+              <button class="small-btn" type="button" onclick="moveDown(${index})">Down</button>
+              <button class="small-btn" type="button" onclick="removeMove(${index})">Remove</button>
+            </div>
+          `;
+          sequenceContainer.appendChild(div);
+        });
+      }
+      sequenceStatus.textContent = `${sequence.length} / ${MAX_MOVES} moves selected.`;
+      renderVisualSequence();
+    }
+
+    function renderVisualSequence() {
+      visualSequence.innerHTML = "";
+      if (sequence.length === 0) {
+        visualSequence.innerHTML = "<p style='color:#777; font-size:0.85rem;'>No sequence yet. Add moves to see the routine layout.</p>";
+        return;
+      }
+
+      sequence.forEach((id, index) => {
+        const move = MOVE_LIBRARY.find(m => m.id === id);
+        const box = document.createElement("div");
+        box.className = "visual-step";
+        box.dataset.index = index;
+        box.dataset.label = index + 1;
+        box.title = move.name;
+        box.innerHTML = `<span>${index + 1}</span>`;
+        visualSequence.appendChild(box);
+      });
+    }
+
+    function clearVisualHighlight() {
+      const boxes = visualSequence.querySelectorAll(".visual-step");
+      boxes.forEach(b => b.classList.remove("active"));
+    }
+
+    function highlightVisualStep(index) {
+      clearVisualHighlight();
+      const box = visualSequence.querySelector(`.visual-step[data-index="${index}"]`);
+      if (box) {
+        box.classList.add("active");
+      }
+    }
+
+    function updateMoveImage(move) {
+      if (!move) {
+        moveImage.src = "";
+        moveImage.alt = "No move selected";
+        return;
+      }
+      moveImage.src = move.img;
+      moveImage.alt = move.name;
+    }
+
+    // Sequence modification
+    window.addMove = function(id) {
+      if (sequence.length >= MAX_MOVES) {
+        alert("You can only pick 4 moves.");
+        return;
+      }
+      sequence.push(id);
+      renderSequence();
+    };
+
+    window.moveUp = function(i) {
+      if (i === 0) return;
+      [sequence[i], sequence[i - 1]] = [sequence[i - 1], sequence[i]];
+      renderSequence();
+    };
+
+    window.moveDown = function(i) {
+      if (i === sequence.length - 1) return;
+      [sequence[i], sequence[i + 1]] = [sequence[i + 1], sequence[i]];
+      renderSequence();
+    };
+
+    window.removeMove = function(i) {
+      sequence.splice(i, 1);
+      renderSequence();
+      if (sequence.length === 0) {
+        resetHighlight();
+      }
+    };
+
+    function clearSequence() {
+      if (playing) return;
+      sequence = [];
+      renderSequence();
+      resetHighlight();
+    }
+
+    function resetHighlight() {
+      highlightMove.textContent = "No move playing yet.";
+      highlightDesc.textContent = "Build a sequence and press \"Play Sequence\" to preview.";
+      clearVisualHighlight();
+      updateMoveImage(null);
+    }
+
+    function playSequence() {
+      if (sequence.length === 0 || playing) return;
+      playing = true;
+      playBtn.disabled = true;
+      clearBtn.disabled = true;
+
+      let index = 0;
+
+      const stepThrough = () => {
+        if (index >= sequence.length) {
+          playing = false;
+          playBtn.disabled = false;
+          clearBtn.disabled = false;
+          highlightMove.textContent = "Sequence complete.";
+          highlightDesc.textContent = "";
+          clearVisualHighlight();
+          return;
+        }
+
+        const moveId = sequence[index];
+        const move   = MOVE_LIBRARY.find(m => m.id === moveId);
+        if (move) {
+          highlightMove.textContent = move.name;
+          highlightDesc.textContent = move.description;
+          highlightVisualStep(index);
+          updateMoveImage(move);
+        }
+
+        index++;
+        playTimeout = setTimeout(stepThrough, 1500);
+      };
+
+      stepThrough();
+    }
+
+    clearBtn.addEventListener("click", clearSequence);
+    playBtn.addEventListener("click", playSequence);
+
+    renderAvailableMoves();
+    renderSequence();
+  </script>
+</body>
+</html>
